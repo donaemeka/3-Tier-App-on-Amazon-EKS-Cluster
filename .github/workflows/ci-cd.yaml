@@ -14,21 +14,21 @@ jobs:
   build-and-deploy-vote:
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}  # Use tag or commit SHA as image tag
+      IMAGE_TAG: ${{ github.sha }}  # Use commit SHA as image tag
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4  # Checkout the repository code
+        uses: actions/checkout@v4
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}  # Docker Hub username stored in secrets
-          password: ${{ secrets.DOCKER_PASSWORD }}  # Docker Hub password stored in secrets
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push vote service
         uses: docker/build-push-action@v6
         with:
-          push: true  # Push the image to Docker Hub
+          push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/vote:latest
@@ -36,40 +36,32 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # AWS access key stored in secrets
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # AWS secret access key stored in secrets
-          aws-region: ${{ secrets.AWS_REGION }}  # AWS region stored in secrets
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Install kubectl
         run: |
-          curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.32.0/2024-12-20/bin/linux/amd64/kubectl  # Download kubectl
-          chmod +x ./kubectl  # Make kubectl executable
-          mkdir -p $HOME/bin  # Create bin directory
-          mv ./kubectl $HOME/bin/kubectl  # Move kubectl to bin directory
-          echo "::add-path::$HOME/bin"  # Add bin to PATH
+          curl -LO https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
       - name: Update kubeconfig for EKS
         run: |
-          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.AWS_CLUSTER }}  # Update kubeconfig to interact with EKS cluster
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.AWS_CLUSTER }}
 
-      - name: Generate the final deployment template for vote service
+      - name: Generate and Deploy vote service
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gettext-base  # Install gettext-base for environment variable substitution
-          export IMAGE_NAME="docker.io/${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}"  # Set image name
-          envsubst < k8s/vote-deployment.template.yaml > k8s/vote-deployment.yaml  # Substitute environment variables into the template
-          echo "Final vote-deployment.yaml:"  # Show final deployment file
-          cat k8s/vote-deployment.yaml  # Display the deployment file
+          sudo apt-get update && sudo apt-get install -y gettext-base
+          export IMAGE_NAME="docker.io/${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}"
+          envsubst < k8s/vote-deployment.template.yaml > k8s/vote-deployment.yaml
+          kubectl apply -f k8s/vote-deployment.yaml
 
-      - name: Deploy vote service to EKS
-        run: |
-          kubectl apply -f k8s/vote-deployment.yaml  # Deploy the vote service to EKS
-
-  # Job for the result service (similar to vote service)
+  # Job for the result service
   build-and-deploy-result:
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -88,43 +80,18 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/result:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/result:latest
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Install kubectl
+      - name: Generate and Deploy result service
         run: |
-          curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.32.0/2024-12-20/bin/linux/amd64/kubectl
-          chmod +x ./kubectl
-          mkdir -p $HOME/bin
-          mv ./kubectl $HOME/bin/kubectl
-          echo "::add-path::$HOME/bin"
-
-      - name: Update kubeconfig for EKS
-        run: |
-          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.AWS_CLUSTER }}
-
-      - name: Generate the final deployment template for result service
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gettext-base
+          sudo apt-get update && sudo apt-get install -y gettext-base
           export IMAGE_NAME="docker.io/${{ secrets.DOCKER_USERNAME }}/result:${{ env.IMAGE_TAG }}"
           envsubst < k8s/result-deployment.template.yaml > k8s/result-deployment.yaml
-          echo "Final result-deployment.yaml:"
-          cat k8s/result-deployment.yaml
-
-      - name: Deploy result service to EKS
-        run: |
           kubectl apply -f k8s/result-deployment.yaml
 
-  # Job for the worker service (similar to vote and result services)
+  # Job for the worker service
   build-and-deploy-worker:
     runs-on: ubuntu-latest
     env:
-      IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -143,6 +110,6 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/worker:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/worker:latest
 
-      - name: Deploy to EKS
+      - name: Deploy worker service
         run: |
-          kubectl apply -f k8s/
+          kubectl apply -f k8s/worker-deployment.yaml
