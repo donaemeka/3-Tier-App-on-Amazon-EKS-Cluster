@@ -35,16 +35,16 @@ build-and-deploy:
             ${{ secrets.DOCKER_USERNAME }}/worker:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/worker:latest
 
-      - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region: your-region
+      # Add this step to configure kubeconfig for EKS
+    - name: Set up kubeconfig for EKS
+      run: |
+        aws eks update-kubeconfig --region us-west-2 --name dona-app-cluster-ng-773f99b5-Node
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Update kubeconfig for EKS
-        run: aws eks update-kubeconfig --region us-wes-2 --name dona-app-cluster-ng-773f99b5-Node
+    # Add any deployment steps after this, such as deploying to Kubernetes
+    - name: Deploy to EKS
+      run: kubectl apply -f ./k8s
 
-      - name: Deploy application
-        run: |
-          kubectl apply -f k8s/
+      
