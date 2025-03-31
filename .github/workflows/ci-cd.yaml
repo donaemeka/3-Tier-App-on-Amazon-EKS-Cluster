@@ -30,8 +30,8 @@ jobs:
         with:
           push: true  # Push the image to Docker Hub
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}  # Build image with the commit SHA or tag
-            ${{ secrets.DOCKER_USERNAME }}/vote:latest  # Push the latest tag
+            ${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/vote:latest
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -65,7 +65,7 @@ jobs:
         run: |
           kubectl apply -f k8s/vote-deployment.yaml  # Deploy the vote service to EKS
 
-  # The same correction applies to result and worker services:
+  # Job for the result service (similar to vote service)
   build-and-deploy-result:
     runs-on: ubuntu-latest
     env:
@@ -88,10 +88,39 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/result:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/result:latest
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install kubectl
+        run: |
+          curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.32.0/2024-12-20/bin/linux/amd64/kubectl
+          chmod +x ./kubectl
+          mkdir -p $HOME/bin
+          mv ./kubectl $HOME/bin/kubectl
+          echo "::add-path::$HOME/bin"
+
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.AWS_CLUSTER }}
+
+      - name: Generate the final deployment template for result service
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext-base
+          export IMAGE_NAME="docker.io/${{ secrets.DOCKER_USERNAME }}/result:${{ env.IMAGE_TAG }}"
+          envsubst < k8s/result-deployment.template.yaml > k8s/result-deployment.yaml
+          echo "Final result-deployment.yaml:"
+          cat k8s/result-deployment.yaml
+
       - name: Deploy result service to EKS
         run: |
           kubectl apply -f k8s/result-deployment.yaml
 
+  # Job for the worker service (similar to vote and result services)
   build-and-deploy-worker:
     runs-on: ubuntu-latest
     env:
@@ -114,6 +143,6 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/worker:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/worker:latest
 
-      - name: Deploy worker service to EKS
+      - name: Deploy to EKS
         run: |
-          kubectl apply -f k8s/worker-deployment.yaml
+          kubectl apply -f k8s/
