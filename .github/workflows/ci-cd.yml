@@ -1,0 +1,57 @@
+build-and-deploy:
+  runs-on: ubuntu-latest
+  env:
+    IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+   steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./vote
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/vote:latest
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./result
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/result:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/result:latest
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./worker
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/worker:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/worker:latest
+
+      # Add this step to configure kubeconfig for EKS
+    - name: Set up kubeconfig for EKS
+      run: |
+        Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.AWS_CLUSTER }}
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # Add any deployment steps after this, such as deploying to Kubernetes
+    - name: Deploy to EKS
+      run: kubectl apply -f ./k8s
+      - name: Create Kubernetes Secret
+      run: |
+        kubectl create secret generic db-credentials \
+          --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+          --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+      
