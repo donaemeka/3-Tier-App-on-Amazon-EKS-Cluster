@@ -18,7 +18,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi  # 5GB persistent storage
+      storage: 5Gi
 
 ---
 apiVersion: apps/v1
@@ -39,10 +39,23 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15  # Fixed version for stability
-          envFrom:
-            - secretRef:
-                name: postgres-secret  # Use secrets for credentials
+          image: postgres:15
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
           ports:
             - containerPort: 5432
           volumeMounts:
@@ -57,7 +70,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
+  name: postgres-service
 spec:
   selector:
     app: postgres
@@ -65,16 +78,3 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
-  clusterIP: None  # Headless service for stable internal DNS
-
-env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: POSTGRES_PASSWORD
