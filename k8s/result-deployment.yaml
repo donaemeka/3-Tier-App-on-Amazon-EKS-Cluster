@@ -18,17 +18,14 @@ spec:
           ports:
             - containerPort: 80
           env:
-            - name: REDIS_HOST
-              value: "redis-service"
-            - name: REDIS_PORT
-              value: "6379"
+
             - name: POSTGRES_HOST
               value: "postgres-service"
-            - name: POSTGRES_PORT
+            - name: PG_PORT
               value: "5432"
-            - name: POSTGRES_DB
-              value: "vote_result_db"
-            - name: POSTGRES_USER
+            - name: PG_DATABASE
+              value: "posgres"
+            - name: PG_DATABASE
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
