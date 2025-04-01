@@ -18,14 +18,13 @@ spec:
           ports:
             - containerPort: 80
           env:
-
             - name: POSTGRES_HOST
               value: "postgres-service"
             - name: PG_PORT
               value: "5432"
             - name: PG_DATABASE
               value: "posgres"
-            - name: PG_DATABASE
+            - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
