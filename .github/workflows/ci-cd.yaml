@@ -65,3 +65,16 @@ jobs:
             --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
+              - name: Set up AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ secrets.AWS_REGION }}
+            
+            - name: Set up kubeconfig for EKS
+              run: |
+                aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name dona-app-cluster
+              env:
+                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
