@@ -66,3 +66,15 @@ spec:
       port: 5432
       targetPort: 5432
   clusterIP: None  # Headless service for stable internal DNS
+
+env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_PASSWORD
