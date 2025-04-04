@@ -1,29 +1,26 @@
-name: CI/CD Pipeline
-
+name: CI / CD Pipeline
+run-name: ${{ github.actor}} is Deploying
 on:
   push:
     branches:
       - main
-
+    tags:
+      - '*'
+  workflow_dispatch:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
       IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
     steps:
-      # Checkout the repository code
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      # Log in to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # Build and push vote image
-      - name: Build and push vote
+      - name: Build and Push Vote Image
         uses: docker/build-push-action@v6
         with:
           context: ./vote
@@ -31,9 +28,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/vote:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/vote:latest
-
-      # Build and push result image
-      - name: Build and push result
+      - name: Build and Push Result Image
         uses: docker/build-push-action@v6
         with:
           context: ./result
@@ -41,9 +36,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/result:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/result:latest
-
-      # Build and push worker image
-      - name: Build and push worker
+      - name: Build and Push Worker Image
         uses: docker/build-push-action@v6
         with:
           context: ./worker
@@ -51,28 +44,43 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/worker:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/worker:latest
-
-      # Set up AWS credentials (needed for kubectl to interact with EKS)
-      - name: Set up AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      # Set up kubeconfig to connect to EKS
-      - name: Set up kubeconfig for EKS
+      - name: Install kubectl
+        run: |
+          curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.32.0/2024-12-20/bin/linux/amd64/kubectl
+          chmod +x ./kubectl
+          mkdir -p $HOME/bin
+          mv ./kubectl $HOME/bin/kubectl
+          export PATH=$HOME/bin:$PATH
+          echo "$HOME/bin" >> $GITHUB_PATH
+      - name: Update kubeconfig for EKS
         run: |
           aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.AWS_CLUSTER }}
-
-      # Deploy Kubernetes resources to EKS
-      - name: Deploy to EKS
-        run: kubectl apply -f ./k8s
-
-      # Create Kubernetes secret for PostgreSQL credentials
       - name: Create Kubernetes Secret
         run: |
           kubectl create secret generic db-credentials \
             --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f k8s/
+          kubectl apply -f k8s/vote-deploy+service.yaml
+          kubectl apply -f k8s/result-deploy+service.yaml
+          kubectl apply -f k8s/worker-deploy+service.yaml
+      - name: Restart Deployments to Pull Latest Image # Need this because Kubernetes does not automatically pull a new image if the tag remains similar
+        run: |
+          kubectl rollout restart deployment/result-deployment
+          kubectl rollout restart deployment/worker-deployment
+          kubectl rollout restart deployment/vote-deployment
+
+
+
+
+
+

@@ -13,8 +13,8 @@ spec:
         app: redis
     spec:
       containers:
-        - name: redis-container
-          image: redis:alpine
+        - name: redis
+          image: redis:latest
           ports:
             - containerPort: 6379
 ---
@@ -26,6 +26,7 @@ spec:
   selector:
     app: redis
   ports:
-    - port: 6379
+    - name: redis-port
+      port: 6379
       targetPort: 6379
 
