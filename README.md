@@ -19,24 +19,32 @@ A distributed voting application demonstrating DevOps practices:
 Key Achievements:
 
 ✅ Deployed on AWS EKS using eksctl (see cluster config).
+
 ✅ Automated CI/CD with GitHub Actions (18 workflow runs).
+
 ✅ Hardened PostgreSQL security (updated deployment configs).
 
 🛠️ Tech Stack
 
 Category	Tools
 Cloud	         -  AWS EKS, EC2, IAM, VPC
+
 Orchestration  - 	Kubernetes (kubectl), Docker Compose
+
 CI/CD	         -  GitHub Actions (Build/Deploy)
+
 Languages     -	Python (Flask), .NET 7.0, Node.js, JavaScript
+
 Database	     -   PostgreSQL (with security optimizations)
 
 🚀 Deployment
+
 1. Local Development
 
 docker compose up  # Runs all services (vote, redis, worker, db, result)
 Access:
 Vote: http://localhost:8080
+
 Results: http://localhost:8081
 
 2. AWS EKS Cluster Setup
