@@ -86,12 +86,18 @@ Secrets: (Optional) Recommend adding AWS Secrets Manager for credentials.
 📂 Repository Structure
 
 plaintext
-├── .github/workflows/  # GitHub Actions CI/CD (e.g., deploy.yml)
+├── .github/workflows/  # GitHub Actions CI/CD 
+
 ├── vote/               # Python/Flask voting interface
+
 ├── result/             # Node.js results dashboard
+
 ├── worker/             # .NET 7.0 vote processor
+
 ├── k8s/                # Kubernetes manifests (if applicable)
+
 ├── docker-compose.yml  # Local dev environment
+
 └── eksctl-config/      # EKS cluster config (if used)
 
 
@@ -108,48 +114,75 @@ Solution:
 
 yaml:
 securityContext:
+
   readOnlyRootFilesystem: true
+  
   allowPrivilegeEscalation: false
+  
 > Configured network policies to limit DB access to only worker pods
 
 2. CI/CD Pipeline Reliability
+   
 Challenge: Silent deployment failures caused service interruptions.
+
 Solution:
+
 > Implemented GitHub Actions health checks:
 
 yaml:
+
 - name: Verify deployment
-  run: |
+- 
+  run: 
+  
     kubectl rollout status deployment/vote-app --timeout=2m
+  
     curl -sSf http://$LOAD_BALANCER_URL/health
   
 > Added automatic rollback on failure:
+
 kubectl rollout undo deployment/vote-app
 
 3. Multi-Architecture Support
+   
 Challenge: ARM-built containers failed on AWS x86 nodes.
+
 Solution:
+
 > Configured cross-platform builds: docker buildx build --platform linux/amd64 -t app/worker:latest ./worker
   
 > Added architecture validation step in CI pipeline
 
 4. Redis Performance Bottlenecks
+   
 Challenge: High traffic caused vote processing delays.
+
 Solution:
+
 > Implemented Horizontal Pod Autoscaler for workers:
 
 yaml:
+
 metrics:
+
   - type: External
+    
     external:
+    
       metricName: redis_queue_length
+    
       targetAverageValue: 100
+    
 > Optimized .NET worker batch processing intervals
 
 5. Configuration Management
+   
 Challenge: Environment-specific settings required manual updates.
+
 Solution:
+
 > Implemented Kustomize overlays for dev/prod environments
 
 Automated config injection using:
+
 kubectl create configmap app-config --from-env-file=.env
