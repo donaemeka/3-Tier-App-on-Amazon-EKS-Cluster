@@ -27,6 +27,7 @@ Key Achievements:
 🛠️ Tech Stack
 
 Category	Tools
+
 Cloud	         -  AWS EKS, EC2, IAM, VPC
 
 Orchestration  - 	Kubernetes (kubectl), Docker Compose
@@ -48,13 +49,17 @@ Vote: http://localhost:8080
 Results: http://localhost:8081
 
 2. AWS EKS Cluster Setup
+   
 eksctl create cluster --name <cluster> --node-type t3.medium --nodes 3 --region <region>
+
 kubectl apply -f k8s/  # Applies Kubernetes manifests
 
 Note for ARM64 (M1/M2):
+
 docker buildx build --platform linux/amd64 -t myorg/worker:latest ./worker
 
 ⚙️ CI/CD Pipeline
+
 GitHub Actions Workflow:
 
 Triggers: On push to main
@@ -69,6 +74,7 @@ Deploy to EKS via kubectl.
 
 
 🔒 Security Highlights
+
 PostgreSQL: Updated security configs in postgres-deployment.yaml.
 
 IAM: Least-privilege roles for EKS nodes.
@@ -76,6 +82,7 @@ IAM: Least-privilege roles for EKS nodes.
 Secrets: (Optional) Recommend adding AWS Secrets Manager for credentials.
 
 📂 Repository Structure
+
 plaintext
 ├── .github/workflows/  # GitHub Actions CI/CD (e.g., deploy.yml)
 ├── vote/               # Python/Flask voting interface
@@ -89,9 +96,12 @@ plaintext
 🔥 Key Challenges & Technical Solutions
  
 1. Database Security Configuration
+   
 Challenge: Default PostgreSQL deployment had unencrypted traffic and excessive permissions.
 Solution:
+
 > Implemented Kubernetes Secrets for credential management
+
 > Added securityContext restrictions in deployment:
 
 yaml:
