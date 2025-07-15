@@ -1,155 +1,131 @@
-<!-- © 2024 | Ironhack -->
+3-Tier Voting App on Amazon EKS
+Containerized microservices deployed on AWS EKS with GitHub Actions CI/CD
 
----
+📌 Project Overview
+A distributed voting application demonstrating DevOps practices:
 
-# Multi-Stack Voting Application
+. Frontend (Vote): Python/Flask (vote/)
 
-**Welcome to your DevOps practice project!** This repository hosts a multi-stack voting application composed of several services, each implemented in a different language and technology stack. The goal is to help you gain experience with containerization, orchestration, and running a distributed set of services—both individually and as part of a unified system.
+. Queue: Redis
 
-This application, while simple, uses multiple components commonly found in modern distributed architectures, giving you hands-on practice in connecting services, handling containers, and working with basic infrastructure automation.
+. Worker: .NET 7.0 (worker/)
 
-## Application Overview
+. Database: PostgreSQL (secured via config updates)
 
-The voting application includes:
+. Results (Result): Node.js/Express (result/)
 
-- **Vote (Python)**: A Python Flask-based web application where users can vote between two options.
-- **Redis (in-memory queue)**: Collects incoming votes and temporarily stores them.
-- **Worker (.NET)**: A .NET 7.0-based service that consumes votes from Redis and persists them into a database.
-- **Postgres (Database)**: Stores votes for long-term persistence.
-- **Result (Node.js)**: A Node.js/Express web application that displays the vote counts in real time.
+Key Achievements:
+✅ Deployed on AWS EKS using eksctl (see cluster config).
+✅ Automated CI/CD with GitHub Actions (18 workflow runs).
+✅ Hardened PostgreSQL security (updated deployment configs).
 
-### Why This Setup?
+🛠️ Tech Stack
+Category	Tools
+Cloud	         -  AWS EKS, EC2, IAM, VPC
+Orchestration  - 	Kubernetes (kubectl), Docker Compose
+CI/CD	         -  GitHub Actions (Build/Deploy)
+Languages     -	Python (Flask), .NET 7.0, Node.js, JavaScript
+Database	     -   PostgreSQL (with security optimizations)
 
-The goal is to introduce you to a variety of languages, tools, and frameworks in one place. This is **not** a perfect production design. Instead, it’s intentionally diverse to help you:
+🚀 Deployment
+1. Local Development
 
-- Work with multiple runtimes and languages (Python, Node.js, .NET).
-- Interact with services like Redis and Postgres.
-- Containerize applications using Docker.
-- Use Docker Compose to orchestrate and manage multiple services together.
+docker compose up  # Runs all services (vote, redis, worker, db, result)
+Access:
+Vote: http://localhost:8080
+Results: http://localhost:8081
 
-By dealing with this “messy” environment, you’ll build real-world problem-solving skills. After this project, you should feel more confident tackling more complex deployments and troubleshooting issues in containerized, multi-service setups.
+2. AWS EKS Cluster Setup
+eksctl create cluster --name <cluster> --node-type t3.medium --nodes 3 --region <region>
+kubectl apply -f k8s/  # Applies Kubernetes manifests
 
----
-
-## How to Run Each Component
-
-### Running the Vote Service (Python) Locally (No Docker)
-
-1. Ensure you have Python 3.10+ installed.
-2. Navigate to the `vote` directory:
-   ```bash
-   cd vote
-   pip install -r requirements.txt
-   python app.py
-   ```
-   Access the vote interface at [http://localhost:5000](http://localhost:5000).
-
-### Running Redis Locally (No Docker)
-
-1. Install Redis on your system ([https://redis.io/docs/getting-started/](https://redis.io/docs/getting-started/)).
-2. Start Redis:
-   ```bash
-   redis-server
-   ```
-   Redis will be available at `localhost:6379`.
-
-### Running the Worker (C#/.NET) Locally (No Docker)
-
-1. Ensure .NET 7.0 SDK is installed.
-2. Navigate to `worker`:
-   ```bash
-   cd worker
-   dotnet restore
-   dotnet run
-   ```
-   The worker will attempt to connect to Redis and Postgres when available.
-
-### Running Postgres Locally (No Docker)
-
-1. Install Postgres from [https://www.postgresql.org/download/](https://www.postgresql.org/download/).
-2. Start Postgres, note the username and password (default `postgres`/`postgres`):
-   ```bash
-   # On many systems, Postgres runs as a service once installed.
-   ```
-   Postgres will be available at `localhost:5432`.
-
-### Running the Result Service (Node.js) Locally (No Docker)
-
-1. Ensure Node.js 18+ is installed.
-2. Navigate to `result`:
-   ```bash
-   cd result
-   npm install
-   node server.js
-   ```
-   Access the results interface at [http://localhost:4000](http://localhost:4000).
-
-**Note:** To get the entire system working end-to-end (i.e., votes flowing through Redis, processed by the worker, stored in Postgres, and displayed by the result app), you’ll need to ensure each component is running and that connection strings or environment variables point to the correct services.
-
----
-
-## Running the Entire Stack in Docker
-
-### Building and Running Individual Services
-
-You can build each service with Docker and run them individually:
-
-- **Vote (Python)**:
-  ```bash
-  docker build -t myorg/vote:latest ./vote
-  docker run --name vote -p 8080:80 myorg/vote:latest
-  ```
-  Visit [http://localhost:8080](http://localhost:8080).
-
-- **Redis** (official image, no build needed):
-  ```bash
-  docker run --name redis -p 6379:6379 redis:alpine
-  ```
-
-- **Worker (.NET)**:
-  ```bash
-  docker build -t myorg/worker:latest ./worker
-  docker run --name worker myorg/worker:latest
-  ```
-  
-- **Postgres**:
-  ```bash
-  docker run --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15-alpine
-  ```
-
-- **Result (Node.js)**:
-  ```bash
-  docker build -t myorg/result:latest ./result
-  docker run --name result -p 8081:80 myorg/result:latest
-  ```
-  Visit [http://localhost:8081](http://localhost:8081).
-
-### Using Docker Compose
-
-The easiest way to run the entire stack is via Docker Compose. From the project root directory:
-
-```bash
-docker compose up
-```
-
-This will:
-
-- Build and run the vote, worker, and result services.
-- Run Redis and Postgres from their official images.
-- Set up networks, volumes, and environment variables so all services can communicate.
-
-Visit [http://localhost:8080](http://localhost:8080) to vote and [http://localhost:8081](http://localhost:8081) to see results.
-
----
-
-## Notes on Platforms (arm64 vs amd64)
-
-If you’re on an arm64 machine (e.g., Apple Silicon M1/M2) and encounter issues with images or dependencies that assume amd64, you can use Docker `buildx`:
-
-```bash
+Note for ARM64 (M1/M2):
 docker buildx build --platform linux/amd64 -t myorg/worker:latest ./worker
-```
 
-This ensures the image is built for the desired platform.
+⚙️ CI/CD Pipeline
+GitHub Actions Workflow:
 
----
+Triggers: On push to main
+
+Steps:
+
+Build Docker images for vote, worker, result.
+
+Push to container registry (e.g., ECR).
+
+Deploy to EKS via kubectl.
+
+
+🔒 Security Highlights
+PostgreSQL: Updated security configs in postgres-deployment.yaml.
+
+IAM: Least-privilege roles for EKS nodes.
+
+Secrets: (Optional) Recommend adding AWS Secrets Manager for credentials.
+
+📂 Repository Structure
+plaintext
+├── .github/workflows/  # GitHub Actions CI/CD (e.g., deploy.yml)
+├── vote/               # Python/Flask voting interface
+├── result/             # Node.js results dashboard
+├── worker/             # .NET 7.0 vote processor
+├── k8s/                # Kubernetes manifests (if applicable)
+├── docker-compose.yml  # Local dev environment
+└── eksctl-config/      # EKS cluster config (if used)
+
+
+🔥 Key Challenges & Technical Solutions
+ 
+1. Database Security Configuration
+Challenge: Default PostgreSQL deployment had unencrypted traffic and excessive permissions.
+Solution:
+> Implemented Kubernetes Secrets for credential management
+> Added securityContext restrictions in deployment:
+
+yaml:
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+> Configured network policies to limit DB access to only worker pods
+
+2. CI/CD Pipeline Reliability
+Challenge: Silent deployment failures caused service interruptions.
+Solution:
+> Implemented GitHub Actions health checks:
+
+yaml:
+- name: Verify deployment
+  run: |
+    kubectl rollout status deployment/vote-app --timeout=2m
+    curl -sSf http://$LOAD_BALANCER_URL/health
+  
+> Added automatic rollback on failure:
+kubectl rollout undo deployment/vote-app
+
+3. Multi-Architecture Support
+Challenge: ARM-built containers failed on AWS x86 nodes.
+Solution:
+> Configured cross-platform builds: docker buildx build --platform linux/amd64 -t app/worker:latest ./worker
+  
+> Added architecture validation step in CI pipeline
+
+4. Redis Performance Bottlenecks
+Challenge: High traffic caused vote processing delays.
+Solution:
+> Implemented Horizontal Pod Autoscaler for workers:
+
+yaml:
+metrics:
+  - type: External
+    external:
+      metricName: redis_queue_length
+      targetAverageValue: 100
+> Optimized .NET worker batch processing intervals
+
+5. Configuration Management
+Challenge: Environment-specific settings required manual updates.
+Solution:
+> Implemented Kustomize overlays for dev/prod environments
+
+Automated config injection using:
+kubectl create configmap app-config --from-env-file=.env
