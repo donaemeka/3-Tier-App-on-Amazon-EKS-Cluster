@@ -41,9 +41,11 @@ Database	     -   PostgreSQL (with security optimizations)
 🚀 Deployment
 
 1. Local Development
+   
+   docker compose up  # Runs all services (vote, redis, worker, db, result)
 
-docker compose up  # Runs all services (vote, redis, worker, db, result)
 Access:
+
 Vote: http://localhost:8080
 
 Results: http://localhost:8081
