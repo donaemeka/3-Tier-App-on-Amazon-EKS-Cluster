@@ -1,7 +1,9 @@
 3-Tier Voting App on Amazon EKS
+
 Containerized microservices deployed on AWS EKS with GitHub Actions CI/CD
 
 📌 Project Overview
+
 A distributed voting application demonstrating DevOps practices:
 
 . Frontend (Vote): Python/Flask (vote/)
@@ -15,11 +17,13 @@ A distributed voting application demonstrating DevOps practices:
 . Results (Result): Node.js/Express (result/)
 
 Key Achievements:
+
 ✅ Deployed on AWS EKS using eksctl (see cluster config).
 ✅ Automated CI/CD with GitHub Actions (18 workflow runs).
 ✅ Hardened PostgreSQL security (updated deployment configs).
 
 🛠️ Tech Stack
+
 Category	Tools
 Cloud	         -  AWS EKS, EC2, IAM, VPC
 Orchestration  - 	Kubernetes (kubectl), Docker Compose
