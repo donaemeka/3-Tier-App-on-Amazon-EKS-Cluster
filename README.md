@@ -106,6 +106,7 @@ plaintext
 1. Database Security Configuration
    
 Challenge: Default PostgreSQL deployment had unencrypted traffic and excessive permissions.
+
 Solution:
 
 > Implemented Kubernetes Secrets for credential management
@@ -113,6 +114,7 @@ Solution:
 > Added securityContext restrictions in deployment:
 
 yaml:
+
 securityContext:
 
   readOnlyRootFilesystem: true
